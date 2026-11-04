@@ -66,14 +66,12 @@ INSERT INTO collaboration_history_new (id, event_id, user_email, action_type, ta
 SELECT 
   ch.id,
   ch.event_id,
-  u1.email,
+  ch.user_email,
   ch.action_type,
-  u2.email,
+  ch.target_user_email,
   ch.metadata,
   ch.created_at
-FROM collaboration_history ch
-JOIN users u1 ON ch.user_id = u1.id
-LEFT JOIN users u2 ON ch.target_user_id = u2.id;
+FROM collaboration_history ch;
 
 -- Step 9: Drop old tables
 DROP TABLE collaboration_history;
