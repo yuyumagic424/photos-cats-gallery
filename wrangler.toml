@@ -49,6 +49,8 @@ name = "photos-cats-worker-dev"
 
 [env.production]
 name = "photos-cats-worker"
+workers_dev = false
+preview_urls = false
 
 routes = [
   { pattern = "xile.zhuoyh.top/api/*", zone_name = "zhuoyh.top" },
