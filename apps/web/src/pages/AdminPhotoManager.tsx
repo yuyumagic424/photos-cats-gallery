@@ -5,9 +5,13 @@ import Navbar from '../components/Navbar';
 import { getEvent, getPhotos, deletePhoto, setPhotoFeatured, setPhotoArchived, getPreviewUrl, getOriginalUrl, replacePhoto } from '../api';
 import type { Event, Photo } from '../types';
 import { autoEnhanceImage, resizeBlobToJpeg } from '../autoEnhance';
+import { useUpload } from '../hooks/useUpload';
+import { useUploadCompletionRefresh } from '../hooks/useUploadCompletionRefresh';
 
 const AdminPhotoManager: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
+  const { handleFileInput, queueItems } = useUpload(slug);
+  const completedUploadIds = queueItems.filter(item => item.status === 'completed').map(item => item.id);
   const [event, setEvent] = useState<Event | null>(null);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set());
@@ -40,6 +44,8 @@ const AdminPhotoManager: React.FC = () => {
       setLoading(false);
     }
   };
+
+  useUploadCompletionRefresh(slug || null, completedUploadIds, loadData);
 
   const togglePhoto = (photoId: string) => {
     const newSelected = new Set(selectedPhotos);
@@ -161,12 +167,10 @@ const AdminPhotoManager: React.FC = () => {
               <h1 className="text-4xl font-bold text-gray-900">{event?.name}</h1>
               <p className="text-gray-600 mt-2">Manage photos for this event</p>
             </div>
-            <Link
-              to={`/admin/events/${slug}/upload`}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-            >
+            <label className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition cursor-pointer">
               📷 Upload Photos
-            </Link>
+              <input type="file" multiple accept="image/jpeg,image/png,video/mp4,video/quicktime,.mov,.cr2,.cr3,.crw,.nef,.nrw,.arw,.srf,.sr2,.dng,.raf,.orf,.rw2,.pef,.ptx,.srw,.raw,.rwl,.erf,.kdc,.dcr,.mrw,.x3f,.3fr,.mef,.mos,.iiq" onChange={handleFileInput} className="hidden" />
+            </label>
           </div>
           <div className="mt-3">
             <Link to="/admin/trash" className="text-sm text-gray-600 hover:text-gray-900 inline-flex items-center gap-1">
@@ -236,12 +240,10 @@ const AdminPhotoManager: React.FC = () => {
         ) : photos.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg shadow">
             <p className="text-gray-600 mb-4">No photos in this event yet</p>
-            <Link
-              to={`/admin/events/${slug}/upload`}
-              className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-            >
+            <label className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition cursor-pointer">
               Upload Photos
-            </Link>
+              <input type="file" multiple accept="image/jpeg,image/png,video/mp4,video/quicktime,.mov,.cr2,.cr3,.crw,.nef,.nrw,.arw,.srf,.sr2,.dng,.raf,.orf,.rw2,.pef,.ptx,.srw,.raw,.rwl,.erf,.kdc,.dcr,.mrw,.x3f,.3fr,.mef,.mos,.iiq" onChange={handleFileInput} className="hidden" />
+            </label>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
