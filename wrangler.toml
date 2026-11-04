@@ -17,13 +17,13 @@ crons = []
 # D1 Database binding
 [[d1_databases]]
 binding = "DB"
-database_name = "photos-db"
-database_id = "45a56052-5385-463d-bc79-7ddc20307f53" # Replace with your database_id
+database_name = "photos-cats-db"
+database_id = "7b23840f-153d-4c30-8594-4c214044893b" # Replace with your database_id
 
 # R2 Storage binding
 [[r2_buckets]]
 binding = "PHOTOS_BUCKET"
-bucket_name = "photos-storage"
+bucket_name = "photos-cats-storage"
 
 # Workers AI binding — used ONLY for a batch-limited enrichment cron
 # (caption/tags/embedding generation for search, see scheduled.ts
@@ -89,12 +89,12 @@ crons = []
 
 [[env.production.d1_databases]]
 binding = "DB"
-database_name = "photos-db"
-database_id = "45a56052-5385-463d-bc79-7ddc20307f53"
+database_name = "photos-cats-db"
+database_id = "7b23840f-153d-4c30-8594-4c214044893b"
 
 [[env.production.r2_buckets]]
 binding = "PHOTOS_BUCKET"
-bucket_name = "photos-storage"
+bucket_name = "photos-cats-storage"
 
 # Workers AI binding. MUST be repeated here: named environments do NOT inherit
 # the top-level [ai] binding, so without this env.AI is undefined in production
