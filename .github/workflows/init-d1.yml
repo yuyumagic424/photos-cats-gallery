@@ -1,0 +1,120 @@
+name: Initialize production D1
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type photos-cats-db to confirm'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: initialize-photos-cats-db
+  cancel-in-progress: false
+
+jobs:
+  initialize:
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check confirmation
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+        run: test "$CONFIRM" = photos-cats-db
+
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - uses: ./.github/actions/setup-wrangler
+
+      - name: Stage reviewed migrations in dependency order
+        shell: bash
+        run: |
+          mkdir -p .d1-init/migrations
+          # 003 rebuilds events with its original columns; add admin columns afterward.
+          # Keep staged names stable: Wrangler records them in the database.
+          i=0
+          while IFS= read -r file; do
+            i=$((i + 1))
+            printf -v prefix '%04d' "$i"
+            cp "migrations/$file" ".d1-init/migrations/${prefix}_$file"
+          done <<'MIGRATIONS'
+          001_init.sql
+          002_add_exif_data.sql
+          003_optional_passwords.sql
+          002_admin_improvements.sql
+          004_enhanced_features.sql
+          005_add_city_column.sql
+          006_user_favorites.sql
+          007_add_media_type.sql
+          008_event_collaborators.sql
+          009_add_uploaded_by.sql
+          010_collaboration_history.sql
+          011_email_as_primary_key.sql
+          012_event_visibility.sql
+          013_invite_links.sql
+          014_add_cache_version.sql
+          015_collaborator_roles.sql
+          016_add_source_photo.sql
+          017_performance_indexes.sql
+          018_photo_notified.sql
+          019_photo_upload_complete.sql
+          020_photo_preview_complete.sql
+          021_add_file_hash.sql
+          022_video_transcode_status.sql
+          023_photos_organization_and_ai.sql
+          024_faces_processed_at.sql
+          025_person_linked_account.sql
+          026_photo_person_tags.sql
+          027_drop_albums.sql
+          028_clear_copy_file_hashes.sql
+          029_recheck_video_transcode.sql
+          030_video_poster_status.sql
+          031_photo_tombstones.sql
+          032_recheck_video_poster.sql
+          033_reduce_d1_reads.sql
+          MIGRATIONS
+          test "$i" -eq 34
+          cat > .d1-init/wrangler.toml <<'CONFIG'
+          name = "photos-cats-d1-init"
+          compatibility_date = "2024-09-23"
+
+          [[d1_databases]]
+          binding = "DB"
+          database_name = "photos-cats-db"
+          database_id = "7b23840f-153d-4c30-8594-4c214044893b"
+          migrations_table = "d1_init_migrations"
+          migrations_dir = "migrations"
+          CONFIG
+
+      - name: Verify migrations and repeat on temporary D1
+        shell: bash
+        run: |
+          for attempt in 1 2; do
+            wrangler d1 migrations apply photos-cats-db --local \
+              --config .d1-init/wrangler.toml --persist-to "$RUNNER_TEMP/d1-init-test"
+          done
+
+      - name: Initialize production D1
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          : "${CLOUDFLARE_API_TOKEN:?Missing CLOUDFLARE_API_TOKEN}"
+          : "${CLOUDFLARE_ACCOUNT_ID:?Missing CLOUDFLARE_ACCOUNT_ID}"
+          config=.d1-init/wrangler.toml
+          state=$(wrangler d1 execute photos-cats-db --remote --config "$config" --json \
+            --command "SELECT name FROM sqlite_schema WHERE type IN ('table','view','trigger') AND name NOT GLOB 'sqlite_*' AND name != '_cf_KV'")
+          if ! jq -e 'length == 1 and .[0].success == true and (.[0].results | (length == 0) or any(.name == "d1_init_migrations"))' <<< "$state" >/dev/null; then
+            echo "::error::Database has an existing schema without this workflow's migration history. Initialization stopped."
+            exit 1
+          fi
+          wrangler d1 migrations apply photos-cats-db --remote --config "$config"
