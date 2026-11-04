@@ -100,7 +100,7 @@ async function verifyAccessToken(env: Env, token: string) {
   }
   try {
     const result = await jwtVerify(token, jwks, { issuer, audience: aud, algorithms: ['RS256'] });
-    return result.payload;
+    return result.payload as typeof result.payload & { email?: string; name?: string; given_name?: string; family_name?: string };
   } catch { return null; }
 }
 
