@@ -40,6 +40,8 @@ jobs:
           ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           EVENT_COOKIE_SECRET: ${{ secrets.EVENT_COOKIE_SECRET }}
+          ACCESS_TEAM_DOMAIN: ${{ secrets.ACCESS_TEAM_DOMAIN }}
+          ACCESS_AUD: ${{ secrets.ACCESS_AUD }}
         run: |
           set -euo pipefail
           umask 077
@@ -48,14 +50,15 @@ jobs:
           node --input-type=commonjs - "$secrets_file" <<'NODE'
           const fs = require('node:fs');
           const names = ['CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID',
-            'ADMIN_EMAILS', 'JWT_SECRET', 'EVENT_COOKIE_SECRET'];
+            'ADMIN_EMAILS', 'JWT_SECRET', 'EVENT_COOKIE_SECRET',
+            'ACCESS_TEAM_DOMAIN', 'ACCESS_AUD'];
           for (const name of names) {
             if (!process.env[name]?.trim()) throw new Error(`Missing secret: ${name}`);
           }
-          const { ADMIN_EMAILS, JWT_SECRET, EVENT_COOKIE_SECRET } = process.env;
+          const { ADMIN_EMAILS, JWT_SECRET, EVENT_COOKIE_SECRET, ACCESS_TEAM_DOMAIN, ACCESS_AUD } = process.env;
           if ([JWT_SECRET, EVENT_COOKIE_SECRET].some(value => value.trim().length < 32)) {
             throw new Error('Signing secrets must each contain at least 32 characters');
           }
-          fs.writeFileSync(process.argv[2], JSON.stringify({ ADMIN_EMAILS, JWT_SECRET, EVENT_COOKIE_SECRET }));
+          fs.writeFileSync(process.argv[2], JSON.stringify({ ADMIN_EMAILS, JWT_SECRET, EVENT_COOKIE_SECRET, ACCESS_TEAM_DOMAIN, ACCESS_AUD }));
           NODE
           apps/worker/node_modules/.bin/wrangler deploy --config wrangler.toml --env production --secrets-file "$secrets_file"
