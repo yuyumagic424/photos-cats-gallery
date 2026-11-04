@@ -1,139 +1,86 @@
-name = "photos-worker"
+
+name = "photos-cats-worker"
 main = "./apps/worker/src/index.ts"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
+# Observability
 [observability]
 [observability.logs]
 enabled = true
 invocation_logs = true
 
-# Scheduled cron triggers
-# Paused on 2026-10-25 to protect the D1 daily read allowance.
-# Keep paused until explicitly resumed after verifying query costs.
+# Scheduled tasks disabled
 [triggers]
 crons = []
 
-# D1 Database binding
+# D1 database
 [[d1_databases]]
 binding = "DB"
 database_name = "photos-cats-db"
-database_id = "7b23840f-153d-4c30-8594-4c214044893b" # Replace with your database_id
+database_id = "7b23840f-153d-4c30-8594-4c214044893b"
 
-# R2 Storage binding
+# R2 photo storage
 [[r2_buckets]]
 binding = "PHOTOS_BUCKET"
 bucket_name = "photos-cats-storage"
 
-# Workers AI binding — used ONLY for a batch-limited enrichment cron
-# (caption/tags/embedding generation for search, see scheduled.ts
-# runAiEnrichment) that stays within the free 10,000-neurons/day allocation.
-# No per-request AI calls are made; this never increases the app's cost
-# beyond the free tier at personal/family-gallery scale.
+# Workers AI
 [ai]
 binding = "AI"
 
-# Environment variables and secrets
-# Set these via: wrangler secret put <NAME>
+# Local development settings
 [vars]
 ENVIRONMENT = "development"
-APP_NAME = "Photos"
-BRAND_NAME = "Photos"
-COPYRIGHT_HOLDER = "Your Name"
+APP_NAME = "喜樂相冊"
+BRAND_NAME = "喜樂"
+COPYRIGHT_HOLDER = "Zhuo YH"
 APP_DOMAIN = "localhost:8787"
 CONTACT_EMAIL = "contact@example.com"
 GA_MEASUREMENT_ID = "G-PLACEHOLDER"
-# Optional: set to "debug" (locally, e.g. in .dev.vars) to re-enable verbose
-# per-request debug logging (JWT parsing, permission checks, etc — see
-# apps/worker/src/logger.ts). Left unset here so production/staging only
-# ever log WARN and above (warnings for 4xx responses, errors for 5xx/thrown
-# exceptions and unhandled errors) — see the global request-logging
-# middleware + app.onError in apps/worker/src/index.ts.
-# LOG_LEVEL = "debug"
 
-# Secrets (set via wrangler secret put):
-# - EVENT_COOKIE_SECRET: Secret for signing event session cookies
-# - JWT_SECRET: Secret for signing mobile app JWT tokens  
-# - ADMIN_EMAILS: Comma-separated list of admin email addresses
-# - MAILGUN_API_KEY: (Optional) Mailgun API key for email notifications
-# - MAILGUN_DOMAIN: (Optional) Mailgun domain for sending emails
-
-# Development configuration
+# Development environment
 [env.development]
-name = "photos-worker-dev"
+name = "photos-cats-worker-dev"
 
-# Production configuration
-# Update routes to match your domain
+# ========================================
+# Production environment
+# ========================================
+
 [env.production]
-name = "photos-worker"
-# IMPORTANT: Update these routes to match your APP_DOMAIN
-# Example: { pattern = "photos.yourdomain.com/api/*", zone_name = "yourdomain.com" }
+name = "photos-cats-worker"
+
 routes = [
-  { pattern = "photos.thijsvtol.nl/api/*", zone_name = "thijsvtol.nl" },
-  { pattern = "photos.thijsvtol.nl/media/*", zone_name = "thijsvtol.nl" },
-  { pattern = "photos.thijsvtol.nl/sitemap.xml", zone_name = "thijsvtol.nl" },
-  { pattern = "photos.thijsvtol.nl/robots.txt", zone_name = "thijsvtol.nl" }
+  { pattern = "xile.zhuoyh.top/api/*", zone_name = "zhuoyh.top" },
+  { pattern = "xile.zhuoyh.top/media/*", zone_name = "zhuoyh.top" },
+  { pattern = "xile.zhuoyh.top/sitemap.xml", zone_name = "zhuoyh.top" },
+  { pattern = "xile.zhuoyh.top/robots.txt", zone_name = "zhuoyh.top" }
 ]
 
 [env.production.vars]
 ENVIRONMENT = "production"
-APP_NAME = "Thijs van Tol Photos"
-BRAND_NAME = "Thijs van Tol"
-COPYRIGHT_HOLDER = "Thijs van Tol"
-APP_DOMAIN = "photos.thijsvtol.nl"
-CONTACT_EMAIL = "info@thijsvtol.nl"
+APP_NAME = "喜樂相冊"
+BRAND_NAME = "喜樂"
+COPYRIGHT_HOLDER = "Zhuo YH"
+APP_DOMAIN = "xile.zhuoyh.top"
+CONTACT_EMAIL = "contact@example.com"
 GA_MEASUREMENT_ID = "G-PLACEHOLDER"
 
+# Disable scheduled tasks
 [env.production.triggers]
 crons = []
 
+# Production D1
 [[env.production.d1_databases]]
 binding = "DB"
 database_name = "photos-cats-db"
 database_id = "7b23840f-153d-4c30-8594-4c214044893b"
 
+# Production R2
 [[env.production.r2_buckets]]
 binding = "PHOTOS_BUCKET"
 bucket_name = "photos-cats-storage"
 
-# Workers AI binding. MUST be repeated here: named environments do NOT inherit
-# the top-level [ai] binding, so without this env.AI is undefined in production
-# and runAiEnrichment() silently early-returns every cron tick — leaving every
-# photo's ai_caption/embedding NULL (search-by-description finds nothing).
+# Production Workers AI
 [env.production.ai]
-binding = "AI"
-
-# Staging configuration
-[env.staging]
-name = "photos-worker-staging"
-routes = [
-  { pattern = "staging-photos.thijsvtol.nl/api/*", zone_name = "thijsvtol.nl" },
-  { pattern = "staging-photos.thijsvtol.nl/media/*", zone_name = "thijsvtol.nl" },
-  { pattern = "staging-photos.thijsvtol.nl/sitemap.xml", zone_name = "thijsvtol.nl" },
-  { pattern = "staging-photos.thijsvtol.nl/robots.txt", zone_name = "thijsvtol.nl" }
-]
-
-[env.staging.vars]
-ENVIRONMENT = "staging"
-APP_NAME = "Thijs van Tol Photos (Staging)"
-BRAND_NAME = "Thijs van Tol"
-COPYRIGHT_HOLDER = "Thijs van Tol"
-APP_DOMAIN = "staging-photos.thijsvtol.nl"
-CONTACT_EMAIL = "info@thijsvtol.nl"
-GA_MEASUREMENT_ID = "G-PLACEHOLDER"
-
-[env.staging.triggers]
-crons = []
-
-[[env.staging.d1_databases]]
-binding = "DB"
-  database_name = "photos-db-staging-v2"
-  database_id = "4768f8a4-4289-4718-9519-f90e8141d44f"
-
-[[env.staging.r2_buckets]]
-binding = "PHOTOS_BUCKET"
-bucket_name = "photos-storage-staging"
-
-# Workers AI binding — see the note under [env.production.ai].
-[env.staging.ai]
 binding = "AI"
