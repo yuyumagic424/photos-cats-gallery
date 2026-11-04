@@ -1,6 +1,6 @@
 import { Context, Next } from 'hono';
-import type { Env, User, CloudflareAccessJWT, DBUser, CollaboratorRole } from './types';
-import { jwtVerify } from 'jose';
+import type { Env, User, DBUser, CollaboratorRole } from './types';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { hasEventSessionAccess } from './cookies';
 import { createLogger, logger } from './logger';
 
@@ -61,19 +61,8 @@ export async function extractUser(c: Context<{ Bindings: Env; Variables: Variabl
     log.debug('JWT found, parsing...');
     log.debug('JWT preview:', jwt.substring(0, 50) + '...');
 
-    // Decode JWT (Cloudflare Access already validates it at the edge)
-    const payload = parseJWT(jwt);
-    
-    if (!payload || !payload.sub || !payload.email) {
-      log.debug('Invalid JWT payload:', payload);
-      return null;
-    }
-
-    // Verify expiration
-    if (payload.exp && Date.now() >= payload.exp * 1000) {
-      log.debug('JWT expired');
-      return null;
-    }
+    const payload = await verifyAccessToken(c.env, jwt);
+    if (!payload || typeof payload.sub !== 'string' || typeof payload.email !== 'string') return null;
 
     log.debug('User authenticated:', payload.email);
 
@@ -97,22 +86,22 @@ export async function extractUser(c: Context<{ Bindings: Env; Variables: Variabl
   }
 }
 
-/**
- * Parse JWT without verification (Cloudflare Access validates at edge)
- */
-function parseJWT(token: string): CloudflareAccessJWT | null {
-  try {
-    const parts = token.split('.');
-    if (parts.length !== 3) {
-      return null;
-    }
-
-    const payload = JSON.parse(atob(parts[1]));
-    return payload as CloudflareAccessJWT;
-  } catch (error) {
-    logger.error('Error parsing JWT:', error);
-    return null;
+const accessJWKS = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
+async function verifyAccessToken(env: Env, token: string) {
+  const team = env.ACCESS_TEAM_DOMAIN;
+  const aud = env.ACCESS_AUD;
+  if (!team || !aud) return null;
+  const issuer = team.startsWith('https://') ? team : 'https://' + team;
+  if (!issuer.endsWith('.cloudflareaccess.com')) return null;
+  let jwks = accessJWKS.get(issuer);
+  if (!jwks) {
+    jwks = createRemoteJWKSet(new URL(issuer + '/cdn-cgi/access/certs'));
+    accessJWKS.set(issuer, jwks);
   }
+  try {
+    const result = await jwtVerify(token, jwks, { issuer, audience: aud, algorithms: ['RS256'] });
+    return result.payload;
+  } catch { return null; }
 }
 
 /**
