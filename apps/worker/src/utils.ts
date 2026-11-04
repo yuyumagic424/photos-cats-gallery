@@ -52,7 +52,10 @@ export async function generateUniqueSlug(
   db: D1Database,
   baseName: string
 ): Promise<string> {
-  let slug = generateSlug(baseName);
+  // Names written entirely in non-Latin scripts otherwise produce an empty slug.
+  // Use a unique URL-safe fallback without altering the visible album name.
+  const baseSlug = generateSlug(baseName) || `album-${crypto.randomUUID().slice(0, 8)}`;
+  let slug = baseSlug;
   let counter = 1;
   const maxAttempts = 100;
   
@@ -66,7 +69,7 @@ export async function generateUniqueSlug(
       return slug;
     }
     
-    slug = `${generateSlug(baseName)}-${counter}`;
+    slug = `${baseSlug}-${counter}`;
     counter++;
   }
   
