@@ -41,8 +41,8 @@ MAX_PREVIEW_HEIGHT=1080
 # on a phone is ~1080p, so 1280 is ample while keeping the poster tiny (~100-300KB)
 # vs the multi-MB video it replaces in the grid.
 MAX_POSTER_SIDE=1280
-DB_NAME="photos-db"
-R2_BUCKET="photos-storage"
+DB_NAME="photos-cats-db"
+R2_BUCKET="photos-cats-storage"
 
 WORKDIR=$(mktemp -d)
 trap 'rm -rf "$WORKDIR"' EXIT
@@ -56,8 +56,16 @@ echo "Fetching up to $BATCH_SIZE video(s) needing a compatibility check or a pos
 # without disturbing its transcode state.
 QUERY="SELECT p.id AS id, e.slug AS event_slug, p.source_event_slug AS source_event_slug, p.source_photo_id AS source_photo_id, p.video_transcode_status AS video_transcode_status, p.video_poster_status AS video_poster_status FROM photos p JOIN events e ON p.event_id = e.id WHERE p.file_type = 'video/mp4' AND (p.video_transcode_status IS NULL OR p.video_poster_status IS NULL) LIMIT $BATCH_SIZE"
 
-RESULT_JSON=$(wrangler d1 execute "$DB_NAME" --remote --json --command "$QUERY")
-COUNT=$(echo "$RESULT_JSON" | jq '.[0].results | length')
+# Surface the real D1 CLI error instead of exiting silently under set -e.
+if ! RESULT_JSON=$(wrangler d1 execute "$DB_NAME" --remote --json --command "$QUERY" 2>"$WORKDIR/d1-query.err"); then
+  echo "::error::D1 query failed for database $DB_NAME." >&2
+  cat "$WORKDIR/d1-query.err" >&2
+  exit 1
+fi
+if ! COUNT=$(printf "%s" "$RESULT_JSON" | jq -er 'if type == "array" and .[0].success == true and (.[0].results | type == "array") then .[0].results | length else error("Unexpected D1 result") end'); then
+  echo "::error::Unexpected or unsuccessful D1 response from $DB_NAME." >&2
+  exit 1
+fi
 
 if [ "$COUNT" -eq 0 ]; then
   echo "No videos pending a compatibility check or a poster."
