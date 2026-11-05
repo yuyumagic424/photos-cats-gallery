@@ -5,9 +5,9 @@ name: Nightly Video Transcode
 # real native ffmpeg on this runner — see scripts/transcode-videos.sh for the
 # full rationale (why this runs here and not client-side or in the Worker).
 on:
-  schedule:
-    # 03:00 UTC nightly — low-traffic hours.
-    - cron: '0 3 * * *'
+  # Scheduled production writes temporarily suspended pending owner approval.
+  # schedule:
+  #   - cron: '0 3 * * *'
   workflow_dispatch:
     inputs:
       batch_size:
