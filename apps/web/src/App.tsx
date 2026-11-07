@@ -13,7 +13,6 @@ import RequireProfileName from './components/RequireProfileName';
 import { OfflineBanner } from './components/OfflineBanner';
 import { ToastProvider } from './components/Toast';
 import ErrorBoundary from './components/ErrorBoundary';
-import { AndroidAppPrompt } from './components/AndroidAppPrompt';
 import { initAnalytics, trackPageView } from './services/analytics';
 import { useAndroidBackButton } from './hooks/useAndroidBackButton';
 import { useStatusBar } from './hooks/useStatusBar';
@@ -148,24 +147,6 @@ const ShareIntentHandler = () => {
     };
   }, [navigate, location]);
 
-  // On a mobile browser (not already inside the app), try handing off THIS exact page to
-  // the native app via its custom URL scheme first — see AndroidManifest.xml's photos://open
-  // intent-filter and MobileAuthService.initialize()'s appUrlOpen listener. Silent no-op if
-  // the app isn't installed (the web flow just continues normally, same as the existing
-  // invite-link handoff in InviteAccept.tsx). Runs once per real page load only (empty deps)
-  // so it can't repeatedly bounce the user away while they're already using the web version.
-  useEffect(() => {
-    if (Capacitor.isNativePlatform()) return;
-    if (!/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return;
-    const path = `${window.location.pathname}${window.location.search}`;
-    try {
-      window.location.href = `photos://open?path=${encodeURIComponent(path)}`;
-    } catch (err) {
-      console.debug('[ShareIntentHandler] App deep-link handoff attempt failed, continuing on web:', err);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  
   // Check native plugin for buffered share data after component mounts
   useEffect(() => {
     const isNative = Capacitor.isNativePlatform();
@@ -368,7 +349,6 @@ function App() {
                   <Suspense fallback={<LoadingFallback />}>
                     <AppRoutes />
                   </Suspense>
-                  <AndroidAppPrompt />
                   <GlobalUploadIndicator />
                   <OfflineBanner />
                   <RequireProfileName />
