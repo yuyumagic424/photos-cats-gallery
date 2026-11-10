@@ -1599,7 +1599,7 @@ const PhotoDetail: React.FC = () => {
       {ConfirmDialog}
       {photo && (
         <SEO
-          title={`Photo from ${event?.name} - ${config.appName}`}
+          title={`${(photo.ai_caption?.trim() || photo.original_filename || '照片').slice(0, 90)} · ${event?.name || '相簿'} - ${config.appName}`}
           description={photoDescription}
           keywords={`${event?.name}, photo, ${photo.city || ''}, event photography, ${photo.camera_model || ''}`}
           url={`${window.location.origin}/events/${slug}/${photoId}`}
