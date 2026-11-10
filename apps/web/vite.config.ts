@@ -36,9 +36,6 @@ export default defineConfig({
     },
   },
   build: {
-    // Let Rollup resolve shared dependencies automatically. The manual
-    // react-vendor split caused a circular chunk initialization path that can
-    // leave React undefined when lazy-loading the image editor.
     chunkSizeWarningLimit: 600, // Increase slightly from default 500
   },
   optimizeDeps: {

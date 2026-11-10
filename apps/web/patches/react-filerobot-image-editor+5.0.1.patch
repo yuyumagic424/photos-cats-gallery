@@ -1,0 +1,24 @@
+diff --git a/node_modules/react-filerobot-image-editor/lib/components/Tabs/TabsNavbar/index.js b/node_modules/react-filerobot-image-editor/lib/components/Tabs/TabsNavbar/index.js
+index 41496e9..8c04565 100644
+--- a/node_modules/react-filerobot-image-editor/lib/components/Tabs/TabsNavbar/index.js
++++ b/node_modules/react-filerobot-image-editor/lib/components/Tabs/TabsNavbar/index.js
+@@ -1 +1,2 @@
++import React from "react";
+ import _extends from"@babel/runtime/helpers/extends";import Tabs from"../Tabs";import{StyledTabsNavbar}from"./TabsNavbar.styled";var TabsNavbar=function(a){return React.createElement(StyledTabsNavbar,_extends({className:"FIE_tabs_navbar"},a),React.createElement(Tabs,null))};export default TabsNavbar;
+\ No newline at end of file
+diff --git a/node_modules/react-filerobot-image-editor/lib/components/Tabs/TabsResponsive.js b/node_modules/react-filerobot-image-editor/lib/components/Tabs/TabsResponsive.js
+index d5bc36e..3d6aef7 100644
+--- a/node_modules/react-filerobot-image-editor/lib/components/Tabs/TabsResponsive.js
++++ b/node_modules/react-filerobot-image-editor/lib/components/Tabs/TabsResponsive.js
+@@ -1 +1,2 @@
++import React from "react";
+ import{TabsDrawer,TabsNavbar}from"./index";import{useTabletScreen}from"../../hooks";var TabsResponsive=function(){var a=useTabletScreen();return a?React.createElement(TabsDrawer,null):React.createElement(TabsNavbar,null)};export default TabsResponsive;
+\ No newline at end of file
+diff --git a/node_modules/react-filerobot-image-editor/lib/components/buttons/HistoryButtons/HistoryButtons.js b/node_modules/react-filerobot-image-editor/lib/components/buttons/HistoryButtons/HistoryButtons.js
+index 8ffd478..26c17dd 100644
+--- a/node_modules/react-filerobot-image-editor/lib/components/buttons/HistoryButtons/HistoryButtons.js
++++ b/node_modules/react-filerobot-image-editor/lib/components/buttons/HistoryButtons/HistoryButtons.js
+@@ -1 +1,2 @@
++import React from "react";
+ import _extends from"@babel/runtime/helpers/extends";import{StyledHistoryButtons}from"./HistoryButtons.styled";import RedoButton from"./RedoButton";import ResetButton from"./ResetButton";import UndoButton from"./UndoButton";var HistoryButtons=function(a){return React.createElement(StyledHistoryButtons,_extends({className:"FIE_buttons-history-btns"},a),React.createElement(ResetButton,null),React.createElement(UndoButton,null),React.createElement(RedoButton,null))};export default HistoryButtons;
+\ No newline at end of file
